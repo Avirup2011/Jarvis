@@ -3,17 +3,14 @@ const content = document.querySelector('.content');
 
 function speak(text) {
     const text_speak = new SpeechSynthesisUtterance(text);
-
     text_speak.rate = 1;
     text_speak.volume = 1;
     text_speak.pitch = 1;
-
     window.speechSynthesis.speak(text_speak);
 }
 
 function wishMe() {
-    var day = new Date();
-    var hour = day.getHours();
+    var hour = new Date().getHours();
 
     if (hour >= 0 && hour < 12) {
         speak("Good Morning Boss...");
@@ -56,14 +53,6 @@ function takeCommand(message) {
     } else if (message.includes("open facebook")) {
         window.open("https://facebook.com", "_blank");
         speak("Opening Facebook...");
-    } else if (message.includes('what is') || message.includes('who is') || message.includes('what are')) {
-        window.open(`https://www.google.com/search?q=${message.replace(" ", "+")}`, "_blank");
-        const finalText = "This is what I found on the internet regarding " + message;
-        speak(finalText);
-    } else if (message.includes('wikipedia')) {
-        window.open(`https://en.wikipedia.org/wiki/${message.replace("wikipedia", "").trim()}`, "_blank");
-        const finalText = "This is what I found on Wikipedia regarding " + message;
-        speak(finalText);
     } else if (message.includes('time')) {
         const time = new Date().toLocaleString(undefined, { hour: "numeric", minute: "numeric" });
         const finalText = "The current time is " + time;
@@ -72,13 +61,37 @@ function takeCommand(message) {
         const date = new Date().toLocaleString(undefined, { month: "short", day: "numeric" });
         const finalText = "Today's date is " + date;
         speak(finalText);
-    } else if (message.includes('calculator')) {
-        window.open('Calculator:///');
-        const finalText = "Opening Calculator";
-        speak(finalText);
     } else {
-        window.open(`https://www.google.com/search?q=${message.replace(" ", "+")}`, "_blank");
-        const finalText = "I found some information for " + message + " on Google";
-        speak(finalText);
+        askDeepSeek(message); // 🔁 AI response
+    }
+}
+
+async function askDeepSeek(question) {
+    try {
+        const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer sk-48403d100832495ba8c2693dfe68d698"
+            },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                    {
+                        role: "user",
+                        content: question
+                    }
+                ]
+            })
+        });
+
+        const data = await response.json();
+        const reply = data.choices[0].message.content;
+        speak(reply);
+        content.textContent = reply;
+    } catch (error) {
+        console.error("Error talking to DeepSeek:", error);
+        speak("Sorry, I could not reach DeepSeek.");
+        content.textContent = "Error: " + error.message;
     }
 }
